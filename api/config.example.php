@@ -5,10 +5,10 @@
 //
 //   cp api/config.example.php api/config.php   (then edit the values below)
 
-define('DB_HOST', 'localhost');          // DB host (usually localhost on shared hosting)
-define('DB_NAME', 'u525234982_3jdcs');
-define('DB_USER', 'u525234982_ciocio');
-define('DB_PASS', 'Myhome031090@!');
+define('DB_HOST', 'localhost');           // DB host (usually localhost on shared hosting)
+define('DB_NAME', 'your_db_name');        // database name (from hPanel)
+define('DB_USER', 'your_db_user');        // database user (from hPanel)
+define('DB_PASS', 'CHANGE_ME_PASSWORD');  // database password — NEVER commit the real one
 define('DB_CHARSET', 'utf8mb4');          // connection charset — keep utf8mb4
 define('IMPORT_TOKEN', 'CHANGE_ME_LONG_RANDOM_TOKEN'); // Bearer token for api/import.php
 
