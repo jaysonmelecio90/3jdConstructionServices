@@ -134,7 +134,7 @@
   function renderProjects(node, projects) {
     S.renderTable(node, {
       columns: [
-        { label: "Project", render: function (p) { return S.el("a", { class: "link-brand", href: "project.html?slug=" + encodeURIComponent(p.slug) }, p.name); } },
+        { label: "Project", render: function (p) { return S.el("a", { class: "link-brand", href: "project.php?slug=" + encodeURIComponent(p.slug) }, p.name); } },
         { label: "Material", num: true, render: function (p) { return w.pesoFmt(p.material_total); } },
         { label: "Labor", num: true, render: function (p) { return w.pesoFmt(p.labor_total); } },
         { label: "Other", num: true, render: function (p) { return w.pesoFmt(p.other_total); } },

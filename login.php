@@ -1,9 +1,26 @@
+<?php
+/**
+ * login.php — sign-in page (no auth guard; it must be reachable when logged out).
+ * If the visitor already has a valid session, bounce them straight to the app
+ * (honouring a safe ?next= target), so they never see the form needlessly.
+ */
+require_once __DIR__ . '/api/util.php';
+
+if (current_user() !== null) {
+    $next = $_GET['next'] ?? '';
+    if (!preg_match('/^[A-Za-z0-9_.\-]+\.php(\?.*)?$/', $next)) {
+        $next = 'index.php';
+    }
+    header('Location: ' . $next);
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in · 3J &amp; D Construction Services</title>
+  <title>Sign in &middot; 3J &amp; D Construction Services</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23F59E0B'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 18h14'/%3E%3Cpath d='M7 18V8l5-3v13'/%3E%3Cpath d='M17 18v-7l-5-3'/%3E%3C/g%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -47,7 +64,7 @@
           </form>
         </div>
       </div>
-      <p class="text-center text-secondary small mt-3 mb-0">Demo · admin@3jdconstruction.com / admin123</p>
+      <p class="text-center text-secondary small mt-3 mb-0">Demo &middot; admin@3jdconstruction.com / admin123</p>
     </div>
   </div>
 
@@ -58,8 +75,8 @@
       var btn = document.getElementById("loginBtn");
       function nextUrl() {
         var p = new URLSearchParams(location.search).get("next");
-        if (p && /^[A-Za-z0-9_.\-]+\.html(\?.*)?$/.test(p)) return p;
-        return "index.html";
+        if (p && /^[A-Za-z0-9_.\-]+\.php(\?.*)?$/.test(p)) return p;
+        return "index.php";
       }
       form.addEventListener("submit", async function (e) {
         e.preventDefault();

@@ -1,7 +1,7 @@
 /* ============================================================
    projects.js — Projects page (Bootstrap shell)
    List + full CRUD against api/projects.php. Each project links
-   to its detail page (project.html?slug=). Optional client.
+   to its detail page (project.php?slug=). Optional client.
    ============================================================ */
 (function (w) {
   "use strict";
@@ -91,7 +91,7 @@
     S.renderTable(tableBody, {
       columns: [
         { label: "Project", render: function (p) {
-            return S.el("a", { class: "link-brand", href: "project.html?slug=" + encodeURIComponent(p.slug) }, p.name);
+            return S.el("a", { class: "link-brand", href: "project.php?slug=" + encodeURIComponent(p.slug) }, p.name);
           } },
         { label: "Client", render: function (p) {
             return p.client_name

@@ -8,17 +8,17 @@
   "use strict";
 
   var NAV = [
-    { key: "dashboard", label: "Dashboard", icon: "speedometer2", href: "index.html" },
-    { key: "projects", label: "Projects", icon: "folder2-open", href: "projects.html" },
-    { key: "income", label: "Income", icon: "bank", href: "income.html" },
-    { key: "expenses", label: "Expenses", icon: "cash-stack", href: "expenses.html" },
-    { key: "materials", label: "Materials", icon: "box-seam", href: "materials.html" },
-    { key: "workers", label: "Workers", icon: "person-badge", href: "workers.html" },
-    { key: "payroll", label: "Payroll", icon: "cash-coin", href: "payroll.html", admin: true },
-    { key: "loans", label: "Loans", icon: "piggy-bank", href: "loans.html", admin: true },
-    { key: "clients", label: "Clients", icon: "people", href: "clients.html" },
-    { key: "reports", label: "Reports", icon: "graph-up-arrow", href: "reports.html" },
-    { key: "settings", label: "Settings", icon: "gear", href: "settings.html" },
+    { key: "dashboard", label: "Dashboard", icon: "speedometer2", href: "index.php" },
+    { key: "projects", label: "Projects", icon: "folder2-open", href: "projects.php" },
+    { key: "income", label: "Income", icon: "bank", href: "income.php" },
+    { key: "expenses", label: "Expenses", icon: "cash-stack", href: "expenses.php" },
+    { key: "materials", label: "Materials", icon: "box-seam", href: "materials.php" },
+    { key: "workers", label: "Workers", icon: "person-badge", href: "workers.php" },
+    { key: "payroll", label: "Payroll", icon: "cash-coin", href: "payroll.php", admin: true },
+    { key: "loans", label: "Loans", icon: "piggy-bank", href: "loans.php", admin: true },
+    { key: "clients", label: "Clients", icon: "people", href: "clients.php" },
+    { key: "reports", label: "Reports", icon: "graph-up-arrow", href: "reports.php" },
+    { key: "settings", label: "Settings", icon: "gear", href: "settings.php" },
   ];
 
   var LOGO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18h14"/><path d="M7 18V8l5-3v13"/><path d="M17 18v-7l-5-3"/></svg>';
@@ -72,7 +72,7 @@
   }
   async function logout() {
     try { await fetch("api/auth.php?action=logout", { credentials: "same-origin" }); } catch (e) {}
-    location.href = "login.html";
+    location.href = "login.php";
   }
 
   /* ---------- mount the shell ---------- */
@@ -83,11 +83,11 @@
     var me;
     try {
       var res = await meRequest();
-      if (res.status === 401) { location.replace("login.html?next=" + encodeURIComponent(location.pathname.split("/").pop() + location.search)); return null; }
+      if (res.status === 401) { location.replace("login.php?next=" + encodeURIComponent(location.pathname.split("/").pop() + location.search)); return null; }
       var data = await res.json();
       me = data.user;
     } catch (e) {
-      location.replace("login.html");
+      location.replace("login.php");
       return null;
     }
 
@@ -121,7 +121,7 @@
       el("ul", { class: "dropdown-menu dropdown-menu-end" }, [
         el("li", null, el("span", { class: "dropdown-item-text small text-secondary", text: me.email + " · " + me.role })),
         el("li", null, el("hr", { class: "dropdown-divider" })),
-        el("li", null, el("a", { class: "dropdown-item", href: "settings.html" }, [el("i", { class: "bi bi-gear me-2" }), "Settings"])),
+        el("li", null, el("a", { class: "dropdown-item", href: "settings.php" }, [el("i", { class: "bi bi-gear me-2" }), "Settings"])),
         el("li", null, el("button", { class: "dropdown-item text-danger", type: "button", onClick: logout }, [el("i", { class: "bi bi-box-arrow-right me-2" }), "Sign out"])),
       ]),
     ]);
@@ -379,7 +379,7 @@
     var opts = { method: method, credentials: "same-origin", headers: { Accept: "application/json" } };
     if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
     var res = await fetch(path, opts);
-    if (res.status === 401) { location.replace("login.html"); throw new Error("Session expired."); }
+    if (res.status === 401) { location.replace("login.php"); throw new Error("Session expired."); }
     var txt = await res.text();
     var data = txt ? JSON.parse(txt) : null;
     if (!res.ok) throw new Error((data && (data.error || data.message)) || ("Request failed (" + res.status + ")."));

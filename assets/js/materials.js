@@ -137,7 +137,7 @@
         { label: "Hardware", render: function (r) { return S.el("span", { class: "fw-semibold", text: r.hardware || "—" }); } },
         { label: "Project", render: function (r) {
             if (!r.project_slug) return S.el("span", { class: "text-secondary", text: r.project_name || "—" });
-            return S.el("a", { class: "link-brand", href: "project.html?slug=" + encodeURIComponent(r.project_slug), text: r.project_name || "—" });
+            return S.el("a", { class: "link-brand", href: "project.php?slug=" + encodeURIComponent(r.project_slug), text: r.project_name || "—" });
           } },
         { label: "Location", render: function (r) { return r.location ? r.location : S.el("span", { class: "text-secondary", text: "—" }); } },
         { label: "Date", render: function (r) { return w.fmtDate(r.item_date, r.item_date); } },

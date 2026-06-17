@@ -139,7 +139,7 @@
             if (r.project_id == null || !r.project_slug) {
               return S.el("span", { class: "text-secondary", text: "—" });
             }
-            return S.el("a", { class: "link-brand fw-semibold", href: "project.html?slug=" + encodeURIComponent(r.project_slug) }, r.project_name);
+            return S.el("a", { class: "link-brand fw-semibold", href: "project.php?slug=" + encodeURIComponent(r.project_slug) }, r.project_name);
           },
         },
         { label: "Loaned", num: true, render: function (r) { return S.el("span", { class: "fw-semibold", text: w.pesoFmt(r.amount) }); } },

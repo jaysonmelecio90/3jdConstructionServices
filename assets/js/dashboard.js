@@ -17,7 +17,7 @@
         S.el("h2", { class: "h4 fw-bold mb-0", text: "Company Overview" }),
         S.el("p", { class: "text-secondary small mb-0", text: "Materials, labor and other spend across all projects." }),
       ]),
-      S.el("a", { class: "btn btn-outline-primary btn-sm", href: "reports.html" }, [S.el("i", { class: "bi bi-graph-up-arrow me-1" }), "Reports"]),
+      S.el("a", { class: "btn btn-outline-primary btn-sm", href: "reports.php" }, [S.el("i", { class: "bi bi-graph-up-arrow me-1" }), "Reports"]),
     ]));
     var body = S.el("div", null);
     root.appendChild(body);
@@ -220,7 +220,7 @@
   function renderProjects(node, projects) {
     S.renderTable(node, {
       columns: [
-        { label: "Project", render: function (p) { return S.el("a", { class: "link-brand", href: "project.html?slug=" + encodeURIComponent(p.slug) }, p.name); } },
+        { label: "Project", render: function (p) { return S.el("a", { class: "link-brand", href: "project.php?slug=" + encodeURIComponent(p.slug) }, p.name); } },
         { label: "Material", num: true, render: function (p) { return w.pesoFmt(p.material_total); } },
         { label: "Labor", num: true, render: function (p) { return w.pesoFmt(p.labor_total); } },
         { label: "Other", num: true, render: function (p) { return w.pesoFmt(p.other_total); } },

@@ -151,7 +151,7 @@
       columns: [
         { label: "Date", render: function (r) { return w.fmtDate(r.entry_date_raw, r.entry_date); } },
         { label: "Project", render: function (r) {
-            return S.el("a", { class: "link-brand", href: "project.html?slug=" + encodeURIComponent(r.project_slug || "") }, r.project_name || "—");
+            return S.el("a", { class: "link-brand", href: "project.php?slug=" + encodeURIComponent(r.project_slug || "") }, r.project_name || "—");
           } },
         { label: "Category", render: function (r) { return S.pill(r.category, "category"); } },
         { label: "Item / Payee", render: function (r) {

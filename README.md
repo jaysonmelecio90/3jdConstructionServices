@@ -9,11 +9,15 @@ loans with repayments, and a dashboard bank balance.
 
 - **Backend:** PHP 8 + PDO (MySQL / MariaDB). Pure PHP — **no Composer, no
   `vendor/`, no build step**, no framework.
-- **Frontend:** static HTML + vanilla JS, styled with Bootstrap 5 + Bootstrap
-  Icons + Chart.js (loaded from CDN). API calls use **relative paths**, so the
-  app runs at a domain root or any subfolder.
-- **Auth:** PHP sessions (`TJDSESS` cookie). Login credentials expire 30 days
-  after sign-in (enforced server-side in `api/util.php`).
+- **Frontend:** thin `.php` page shells + vanilla JS, styled with Bootstrap 5 +
+  Bootstrap Icons + Chart.js (loaded from CDN). Each page sets a title/module
+  list and includes shared `partials/` (auth guard + `<head>`); the UI itself is
+  rendered client-side. API calls use **relative paths**, so the app runs at a
+  domain root or any subfolder.
+- **Auth:** PHP sessions (`TJDSESS` cookie). Pages are guarded **server-side**
+  via `partials/guard.php` (logged-out visitors are redirected to `login.php`
+  before any HTML renders); the JS shell re-checks on load. Login credentials
+  expire 30 days after sign-in (enforced server-side in `api/util.php`).
 - **Extensions required:** `pdo_mysql` only (plus core `json`). No `bcmath` —
   money math uses exact integer centavos.
 
@@ -21,7 +25,10 @@ loans with repayments, and a dashboard bank balance.
 
 ```
 CDEngineering/
-├── *.html                 # pages (index, login, projects, payroll, loans, …)
+├── *.php                  # thin page shells (index, login, projects, payroll, …)
+├── partials/
+│   ├── guard.php          # server-side auth guard (redirect to login.php)
+│   └── head.php           # shared <head> + loading spinner ($TITLE/$MODULES)
 ├── assets/
 │   ├── js/                # shell.js + one module per page
 │   └── css/app.css
@@ -72,8 +79,8 @@ CDEngineering/
    flag auto-detects HTTPS).
 6. **Security:** change the seeded admin password immediately.
 
-No `.htaccess` or URL rewriting is required — the app serves plain `.html`
-pages and `api/*.php` endpoints directly.
+No `.htaccess` or URL rewriting is required — the app serves `.php` pages
+(`index.php` is the default document) and `api/*.php` endpoints directly.
 
 ## Secrets
 

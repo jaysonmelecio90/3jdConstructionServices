@@ -72,7 +72,7 @@
     if (hasContract) meta.push("Contract " + w.pesoFmt(project.contract_price));
     meta.push(w.numFmt(kpis.expense_count) + " entries");
     body.appendChild(S.el("div", { class: "mb-3" }, [
-      S.el("a", { class: "btn btn-link btn-sm px-0 text-decoration-none", href: "projects.html" }, [
+      S.el("a", { class: "btn btn-link btn-sm px-0 text-decoration-none", href: "projects.php" }, [
         S.el("i", { class: "bi bi-arrow-left me-1" }), "Back to projects",
       ]),
       S.el("h2", { class: "h4 fw-bold mb-0", text: name }),
@@ -1209,7 +1209,7 @@
     node.appendChild(S.el("div", { class: "empty-state text-center py-5" }, [
       S.el("i", { class: "bi bi-folder-x fs-1 text-secondary" }),
       S.el("p", { class: "mt-2 mb-3", text: msg }),
-      S.el("a", { class: "btn btn-outline-primary btn-sm", href: "projects.html" }, [
+      S.el("a", { class: "btn btn-outline-primary btn-sm", href: "projects.php" }, [
         S.el("i", { class: "bi bi-arrow-left me-1" }), "Back to projects",
       ]),
     ]));

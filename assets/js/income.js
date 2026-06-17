@@ -190,7 +190,7 @@
         { label: "Project", render: function (r) {
             if (r.project_slug) {
               return S.el("a", { class: "link-brand",
-                href: "project.html?slug=" + encodeURIComponent(r.project_slug) },
+                href: "project.php?slug=" + encodeURIComponent(r.project_slug) },
                 r.project_name || "—");
             }
             return S.el("span", { class: "text-secondary", text: "—" });

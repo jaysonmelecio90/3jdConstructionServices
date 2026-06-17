@@ -320,7 +320,7 @@
             }
             return S.el("a", {
               class: "link-brand fw-semibold",
-              href: "project.html?slug=" + encodeURIComponent(r.project_slug),
+              href: "project.php?slug=" + encodeURIComponent(r.project_slug),
             }, r.project_name);
           },
         },
@@ -405,7 +405,7 @@
             }
             return S.el("a", {
               class: "link-brand",
-              href: "project.html?slug=" + encodeURIComponent(r.project_slug),
+              href: "project.php?slug=" + encodeURIComponent(r.project_slug),
             }, r.project_name || "—");
           },
         },
