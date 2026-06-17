@@ -118,8 +118,8 @@
     var top = (d.projects || []).slice(0, 10);
     if (top.length) charts.bar = S.chart(barCanvas, "bar", { labels: top.map(function (p) { return p.name; }), datasets: [{ label: "Total", data: top.map(function (p) { return w.toNum(p.grand_total); }), backgroundColor: S.hexA(t.brand, .85), hoverBackgroundColor: t.brand }] });
 
-    var dv = [w.toNum(split.material), w.toNum(split.labor), w.toNum(split.other)];
-    if (dv[0] + dv[1] + dv[2] > 0) charts.donut = S.chart(donutCanvas, "doughnut", { labels: ["Material", "Labor", "Other"], datasets: [{ data: dv, backgroundColor: [t.material, t.labor, t.other], borderColor: t.surface, borderWidth: 3, hoverOffset: 6 }] }, { cutout: "64%", plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, padding: 14 } } }, tooltip: { callbacks: { label: function (c) { return "  " + c.label + ": " + w.pesoFmt(c.parsed); } } } });
+    var dv = [w.toNum(split.material), w.toNum(split.labor), w.toNum(split.other), w.toNum(split.family), w.toNum(split.health)];
+    if (dv.reduce(function (a, b) { return a + b; }, 0) > 0) charts.donut = S.chart(donutCanvas, "doughnut", { labels: ["Material", "Labor", "Other", "Family", "Health"], datasets: [{ data: dv, backgroundColor: [t.material, t.labor, t.other, t.family, t.health], borderColor: t.surface, borderWidth: 3, hoverOffset: 6 }] }, { cutout: "64%", plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, padding: 14 } } }, tooltip: { callbacks: { label: function (c) { return "  " + c.label + ": " + w.pesoFmt(c.parsed); } } } });
 
     // Monthly chart with income overlay
     var tl = d.timeline || [];

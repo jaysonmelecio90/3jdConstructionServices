@@ -61,6 +61,8 @@
       S.el("option", { value: "material" }, "Material"),
       S.el("option", { value: "labor" }, "Labor"),
       S.el("option", { value: "other" }, "Other"),
+      S.el("option", { value: "family" }, "Family"),
+      S.el("option", { value: "health" }, "Health"),
     ]);
 
     ui.searchInput = S.el("input", { class: "form-control", type: "search", placeholder: "Search item, payee or note…",
@@ -142,6 +144,8 @@
       S.statCard({ label: "Material", value: w.pesoFmt(s.material), sub: "Material spend", accent: "material" }),
       S.statCard({ label: "Labor", value: w.pesoFmt(s.labor), sub: "Labor spend", accent: "labor" }),
       S.statCard({ label: "Other", value: w.pesoFmt(s.other), sub: "Other spend", accent: "other" }),
+      S.statCard({ label: "Family", value: w.pesoFmt(s.family), sub: "Family spend", accent: "family" }),
+      S.statCard({ label: "Health", value: w.pesoFmt(s.health), sub: "Health spend", accent: "health" }),
     ]);
   }
 
@@ -195,6 +199,8 @@
             { value: "material", label: "Material" },
             { value: "labor", label: "Labor" },
             { value: "other", label: "Other" },
+            { value: "family", label: "Family" },
+            { value: "health", label: "Health" },
           ], value: item ? item.category : "material" },
         { name: "entry_date", label: "Date", type: "date", col: 6, value: item ? (item.entry_date || "") : "" },
         { name: "item_name", label: "Item name", type: "text", col: 6, placeholder: "e.g. Portland Cement",

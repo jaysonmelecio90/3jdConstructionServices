@@ -45,6 +45,8 @@ $row = $pdo->query("
         COALESCE(SUM(CASE WHEN category = 'material' THEN amount END), 0) AS material,
         COALESCE(SUM(CASE WHEN category = 'labor'    THEN amount END), 0) AS labor,
         COALESCE(SUM(CASE WHEN category = 'other'    THEN amount END), 0) AS other,
+        COALESCE(SUM(CASE WHEN category = 'family'   THEN amount END), 0) AS family,
+        COALESCE(SUM(CASE WHEN category = 'health'   THEN amount END), 0) AS health,
         COALESCE(SUM(amount), 0) AS grand_total
     FROM expenses
 ")->fetch();
@@ -54,6 +56,8 @@ $categorySplit = [
     'material' => money_str($row['material']),
     'labor'    => money_str($row['labor']),
     'other'    => money_str($row['other']),
+    'family'   => money_str($row['family']),
+    'health'   => money_str($row['health']),
 ];
 
 // Project counts.

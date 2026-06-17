@@ -45,7 +45,7 @@ CREATE TABLE projects (
 CREATE TABLE expenses (
   id             INT                              NOT NULL AUTO_INCREMENT,
   project_id     INT                              NOT NULL,
-  category       ENUM('material','labor','other') NOT NULL,
+  category       ENUM('material','labor','other','family','health') NOT NULL,
   entry_date_raw VARCHAR(64)                      NULL,
   entry_date     DATE                             NULL,
   item_name      VARCHAR(255)                     NULL,

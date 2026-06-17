@@ -321,6 +321,8 @@
       material: g("--c-material", "#2563EB"),
       labor: g("--c-labor", "#10B981"),
       other: g("--c-other", "#8B5CF6"),
+      family: g("--c-family", "#F97316"),
+      health: g("--c-health", "#EC4899"),
     };
   }
   function hexA(hex, a) {

@@ -9,6 +9,8 @@
   --c-material: #2563EB;
   --c-labor: #10B981;
   --c-other: #8B5CF6;
+  --c-family: #F97316;
+  --c-health: #EC4899;
   --sidebar-w: 264px;
 
   --bs-primary: #F59E0B;
@@ -104,6 +106,8 @@ a { text-decoration: none; }
 .stat-card.accent-material::before { background: var(--c-material); }
 .stat-card.accent-labor::before { background: var(--c-labor); }
 .stat-card.accent-other::before { background: var(--c-other); }
+.stat-card.accent-family::before { background: var(--c-family); }
+.stat-card.accent-health::before { background: var(--c-health); }
 .stat-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color); font-weight: 600; }
 .stat-value { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
 .stat-sub { font-size: .8rem; color: var(--bs-secondary-color); }
@@ -121,6 +125,8 @@ a { text-decoration: none; }
 .pill-material { color: var(--c-material); background: color-mix(in srgb, var(--c-material) 13%, transparent); }
 .pill-labor { color: var(--c-labor); background: color-mix(in srgb, var(--c-labor) 14%, transparent); }
 .pill-other { color: var(--c-other); background: color-mix(in srgb, var(--c-other) 14%, transparent); }
+.pill-family { color: var(--c-family); background: color-mix(in srgb, var(--c-family) 14%, transparent); }
+.pill-health { color: var(--c-health); background: color-mix(in srgb, var(--c-health) 14%, transparent); }
 .pill-active { color: var(--c-labor); background: color-mix(in srgb, var(--c-labor) 14%, transparent); }
 .pill-inactive, .pill-not_active { color: var(--bs-secondary-color); background: color-mix(in srgb, var(--bs-emphasis-color) 8%, transparent); }
 .status-toggle { cursor: pointer; border: 1px solid transparent; }

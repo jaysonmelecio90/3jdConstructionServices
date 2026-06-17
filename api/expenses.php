@@ -14,7 +14,7 @@ require_login();
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $pdo = db();
 
-$CATEGORIES = ['material', 'labor', 'other'];
+$CATEGORIES = ['material', 'labor', 'other', 'family', 'health'];
 
 /** Read a JSON request body into an array (empty array if none/invalid). */
 function read_json_body(): array
@@ -162,20 +162,14 @@ if ($method === 'GET') {
     $items = [];
     $count = 0;
     $total = 0.0;
-    $material = 0.0;
-    $labor = 0.0;
-    $other = 0.0;
+    $buckets = ['material' => 0.0, 'labor' => 0.0, 'other' => 0.0, 'family' => 0.0, 'health' => 0.0];
     foreach ($stmt->fetchAll() as $r) {
         $items[] = shape_expense($r);
         $count++;
         $amt = (float) $r['amount'];
         $total += $amt;
-        if ($r['category'] === 'material') {
-            $material += $amt;
-        } elseif ($r['category'] === 'labor') {
-            $labor += $amt;
-        } else {
-            $other += $amt;
+        if (isset($buckets[$r['category']])) {
+            $buckets[$r['category']] += $amt;
         }
     }
 
@@ -184,9 +178,11 @@ if ($method === 'GET') {
         'summary' => [
             'count'    => $count,
             'total'    => number_format($total, 2, '.', ''),
-            'material' => number_format($material, 2, '.', ''),
-            'labor'    => number_format($labor, 2, '.', ''),
-            'other'    => number_format($other, 2, '.', ''),
+            'material' => number_format($buckets['material'], 2, '.', ''),
+            'labor'    => number_format($buckets['labor'], 2, '.', ''),
+            'other'    => number_format($buckets['other'], 2, '.', ''),
+            'family'   => number_format($buckets['family'], 2, '.', ''),
+            'health'   => number_format($buckets['health'], 2, '.', ''),
         ],
     ]);
 }
@@ -211,7 +207,7 @@ if ($method === 'POST') {
         json_out(['error' => 'a valid project is required'], 422);
     }
     if ($category === null) {
-        json_out(['error' => 'category must be material, labor, or other'], 422);
+        json_out(['error' => 'category must be material, labor, other, family, or health'], 422);
     }
     if (!isset($b['amount']) || $b['amount'] === '' || !is_numeric($b['amount'])) {
         json_out(['error' => 'amount is required and must be numeric'], 422);
@@ -271,7 +267,7 @@ if ($method === 'PUT') {
         json_out(['error' => 'a valid project is required'], 422);
     }
     if ($category === null) {
-        json_out(['error' => 'category must be material, labor, or other'], 422);
+        json_out(['error' => 'category must be material, labor, other, family, or health'], 422);
     }
 
     if (array_key_exists('amount', $b)) {
