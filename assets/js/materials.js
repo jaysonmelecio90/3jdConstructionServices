@@ -20,6 +20,22 @@
   var ctrls = {};      // { search, project, status } inputs
   var query = { q: "", project_id: "", status: "" };
   var searchTimer = null;
+  // Autocomplete + price-prediction cache (from api/materials.php?suggest=1).
+  var suggest = { hardware: [], suppliers: [], priceMap: {} };
+
+  function suggestKey(hardware, location) {
+    return JSON.stringify([String(hardware || "").trim().toLowerCase(), String(location || "").trim().toLowerCase()]);
+  }
+  async function loadSuggest() {
+    try {
+      var d = await S.api("GET", "api/materials.php?suggest=1");
+      suggest.hardware = (d && d.hardware) || [];
+      suggest.suppliers = (d && d.suppliers) || [];
+      var map = {};
+      ((d && d.latest) || []).forEach(function (x) { map[suggestKey(x.hardware, x.location)] = x.price; });
+      suggest.priceMap = map;
+    } catch (e) { /* non-fatal — the form still works without suggestions */ }
+  }
 
   document.addEventListener("DOMContentLoaded", init);
 
@@ -38,6 +54,7 @@
       projects = []; // non-fatal — the list can still load/filter by status & search
     }
     fillProjectFilter();
+    loadSuggest();          // hardware/supplier autocomplete + price memory
     await reload();
   }
 
@@ -201,14 +218,48 @@
           value: isEdit ? String(r.project_id) : (query.project_id || String(projects[0].id)) },
         { name: "hardware", label: "Hardware / item", type: "text", required: true, col: 12,
           value: isEdit ? r.hardware : "", placeholder: "e.g. 4mm plywood" },
-        { name: "price", label: "Price (₱)", type: "number", step: "0.01", min: "0", col: 6,
-          value: isEdit ? r.price : "", placeholder: "0.00" },
-        { name: "item_date", label: "Date", type: "date", col: 6, value: isEdit ? r.item_date : "" },
         { name: "location", label: "Location / supplier", type: "text", col: 12,
           value: isEdit ? r.location : "", placeholder: "e.g. Citi Hardware" },
+        { name: "price", label: "Price (₱)", type: "number", step: "0.01", min: "0", col: 6,
+          value: isEdit ? r.price : "", placeholder: "0.00",
+          help: "Auto-filled from the last price for this hardware + supplier." },
+        { name: "item_date", label: "Date", type: "date", col: 6, value: isEdit ? r.item_date : "" },
         { name: "status", label: "Status", type: "select", col: 12,
           options: STATUS_OPTS, value: isEdit ? r.status : "active" },
       ],
+      onMount: function (inputs) {
+        // Native <datalist> autocomplete for hardware + supplier from existing data.
+        function attachList(input, values, id) {
+          if (!input || !values || !values.length) return;
+          var dl = document.createElement("datalist");
+          dl.id = id;
+          values.forEach(function (v) { var o = document.createElement("option"); o.value = v; dl.appendChild(o); });
+          input.parentNode.appendChild(dl);
+          input.setAttribute("list", id);
+          input.setAttribute("autocomplete", "off");
+        }
+        attachList(inputs.hardware, suggest.hardware, "dl-mat-hardware");
+        attachList(inputs.location, suggest.suppliers, "dl-mat-supplier");
+
+        // Don't clobber a price the user typed (or an existing one when editing).
+        if (inputs.price && isEdit && r && r.price != null && String(r.price) !== "") {
+          inputs.price.dataset.userEdited = "true";
+        }
+        if (inputs.price) inputs.price.addEventListener("input", function () { inputs.price.dataset.userEdited = "true"; });
+
+        // Predict the price from the latest entry for this hardware + supplier.
+        function predictPrice() {
+          if (!inputs.price || !inputs.hardware || inputs.price.dataset.userEdited === "true") return;
+          var hw = inputs.hardware.value.trim();
+          if (!hw) return;
+          var price = suggest.priceMap[suggestKey(hw, inputs.location ? inputs.location.value : "")];
+          if (price != null) inputs.price.value = price;
+        }
+        ["change", "input"].forEach(function (ev) {
+          if (inputs.hardware) inputs.hardware.addEventListener(ev, predictPrice);
+          if (inputs.location) inputs.location.addEventListener(ev, predictPrice);
+        });
+      },
       onSubmit: async function (vals) {
         var payload = {
           project_id: parseInt(vals.project_id, 10),
@@ -225,6 +276,7 @@
           await S.api("POST", "api/materials.php", payload);
         }
         S.toast(isEdit ? "Material updated." : "Material added.", "ok");
+        loadSuggest();   // include the just-saved hardware/supplier/price next time
         reload();
       },
     });

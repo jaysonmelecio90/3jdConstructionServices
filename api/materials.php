@@ -94,6 +94,46 @@ function project_exists(PDO $pdo, int $projectId): bool
 // GET — collect (list)
 // ===========================================================================
 if ($method === 'GET') {
+    // -----------------------------------------------------------------------
+    // Autocomplete + price-prediction source for the entry form.
+    //   ?suggest=1 -> { hardware:[...], suppliers:[...],
+    //                   latest:[{hardware,location,price}] }
+    // `latest` holds the most recently entered price for each hardware+supplier
+    // pair (by max id), so the form can pre-fill the price.
+    // -----------------------------------------------------------------------
+    if (isset($_GET['suggest'])) {
+        $hardware = $pdo->query("
+            SELECT DISTINCT hardware FROM material_items
+            WHERE hardware <> '' ORDER BY hardware
+        ")->fetchAll(PDO::FETCH_COLUMN);
+        $suppliers = $pdo->query("
+            SELECT DISTINCT location FROM material_items
+            WHERE location IS NOT NULL AND location <> '' ORDER BY location
+        ")->fetchAll(PDO::FETCH_COLUMN);
+        $latestRows = $pdo->query("
+            SELECT m.hardware, m.location, m.price
+            FROM material_items m
+            JOIN (
+                SELECT hardware, location, MAX(id) AS max_id
+                FROM material_items
+                GROUP BY hardware, location
+            ) t ON t.max_id = m.id
+        ")->fetchAll();
+        $latest = [];
+        foreach ($latestRows as $r) {
+            $latest[] = [
+                'hardware' => $r['hardware'],
+                'location' => $r['location'],
+                'price'    => money_str($r['price']),
+            ];
+        }
+        json_out([
+            'hardware'  => $hardware,
+            'suppliers' => $suppliers,
+            'latest'    => $latest,
+        ]);
+    }
+
     $where = [];
     $args = [];
 
