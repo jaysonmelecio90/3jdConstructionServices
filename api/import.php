@@ -17,7 +17,7 @@ if (!is_array($body) || !isset($body['projects']) || !is_array($body['projects']
     json_out(['error' => 'invalid payload'], 400);
 }
 
-$validCategories = ['material', 'labor', 'other'];
+$validCategories = ['material', 'labor', 'other', 'family', 'health'];
 
 /**
  * Coerce an empty string (or missing) to null; otherwise trimmed string.
