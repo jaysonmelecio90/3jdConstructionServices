@@ -29,9 +29,13 @@ CDEngineering/
 │   ├── config.example.php # copy to config.php and fill in DB credentials
 │   ├── db.php             # PDO singleton
 │   └── util.php           # session auth, JSON helpers
-├── schema.sql             # full DDL + seed (projects, admin user, settings)
-└── ExcelImporter/         # optional C# console ETL → api/import.php
+└── schema.sql             # full DDL + seed (projects, admin user, settings)
 ```
+
+> Pure PHP/JS/CSS/Bootstrap — nothing here needs a runtime other than the PHP
+> interpreter your Hostinger hPanel plan already provides. Bulk imports POST to
+> the `api/import.php` JSON endpoint directly (e.g. via `curl` or any HTTP
+> client), so no separate desktop importer is required.
 
 ## Run locally (XAMPP on Windows)
 
@@ -73,5 +77,6 @@ pages and `api/*.php` endpoints directly.
 
 ## Secrets
 
-Never commit real credentials. `api/config.php` and `.env` are gitignored;
-only the `.example` templates are tracked.
+Never commit real credentials. `api/config.php` holds the DB credentials and
+`IMPORT_TOKEN`; it is gitignored and **not** deployed from the repo — create it
+on the server from `api/config.example.php`, which is the only tracked template.
