@@ -97,9 +97,11 @@ if ($method === 'GET') {
     // -----------------------------------------------------------------------
     // Autocomplete + price-prediction source for the entry form.
     //   ?suggest=1 -> { hardware:[...], suppliers:[...],
-    //                   latest:[{hardware,location,price}] }
+    //                   latest:[{hardware,location,price}],
+    //                   item_supplier:[{hardware,location}] }
     // `latest` holds the most recently entered price for each hardware+supplier
-    // pair (by max id), so the form can pre-fill the price.
+    // pair (by max id). `item_supplier` holds the most recent supplier for each
+    // hardware, so the form can pre-fill the payee from the item name.
     // -----------------------------------------------------------------------
     if (isset($_GET['suggest'])) {
         $hardware = $pdo->query("
@@ -127,10 +129,27 @@ if ($method === 'GET') {
                 'price'    => money_str($r['price']),
             ];
         }
+        // Most recent supplier per hardware (by max id), for payee prediction.
+        $itemSupRows = $pdo->query("
+            SELECT m.hardware, m.location
+            FROM material_items m
+            JOIN (
+                SELECT hardware, MAX(id) AS max_id
+                FROM material_items
+                GROUP BY hardware
+            ) t ON t.max_id = m.id
+        ")->fetchAll();
+        $itemSupplier = [];
+        foreach ($itemSupRows as $r) {
+            if ($r['location'] !== null && $r['location'] !== '') {
+                $itemSupplier[] = ['hardware' => $r['hardware'], 'location' => $r['location']];
+            }
+        }
         json_out([
-            'hardware'  => $hardware,
-            'suppliers' => $suppliers,
-            'latest'    => $latest,
+            'hardware'      => $hardware,
+            'suppliers'     => $suppliers,
+            'latest'        => $latest,
+            'item_supplier' => $itemSupplier,
         ]);
     }
 

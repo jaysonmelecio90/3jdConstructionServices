@@ -20,10 +20,11 @@
 
   // Material-list suggestions: autocomplete for Item/Payee + unit-price memory,
   // shared with the Material List page via api/materials.php?suggest=1.
-  var suggest = { hardware: [], suppliers: [], priceMap: {} };
+  var suggest = { hardware: [], suppliers: [], priceMap: {}, payeeByItem: {} };
   function suggestKey(item, payee) {
     return JSON.stringify([String(item || "").trim().toLowerCase(), String(payee || "").trim().toLowerCase()]);
   }
+  function itemKey(item) { return String(item || "").trim().toLowerCase(); }
   async function loadSuggest() {
     try {
       var d = await S.api("GET", "api/materials.php?suggest=1");
@@ -32,6 +33,9 @@
       var map = {};
       ((d && d.latest) || []).forEach(function (x) { map[suggestKey(x.hardware, x.location)] = x.price; });
       suggest.priceMap = map;
+      var pmap = {};
+      ((d && d.item_supplier) || []).forEach(function (x) { pmap[itemKey(x.hardware)] = x.location; });
+      suggest.payeeByItem = pmap;
     } catch (e) { /* non-fatal — the form still works without suggestions */ }
   }
   function attachList(input, values, id) {
@@ -250,11 +254,21 @@
 
         // Treat existing values (when editing) or anything the user types as
         // user-set, so prediction / auto-calc never clobbers them.
+        if (inputs.payee && isEdit && item && item.payee != null && String(item.payee) !== "") inputs.payee.dataset.userEdited = "true";
         if (inputs.unit_price && isEdit && item && item.unit_price != null && String(item.unit_price) !== "") inputs.unit_price.dataset.userEdited = "true";
         if (inputs.amount && isEdit && item && item.amount != null && String(item.amount) !== "") inputs.amount.dataset.userEdited = "true";
+        if (inputs.payee) inputs.payee.addEventListener("input", function () { inputs.payee.dataset.userEdited = "true"; });
         if (inputs.unit_price) inputs.unit_price.addEventListener("input", function () { inputs.unit_price.dataset.userEdited = "true"; recalcAmount(); });
         if (inputs.amount) inputs.amount.addEventListener("input", function () { inputs.amount.dataset.userEdited = "true"; });
 
+        // Predict the payee (supplier) from the item name, using the material list.
+        function predictPayee() {
+          if (!inputs.payee || inputs.payee.dataset.userEdited === "true") return;
+          var it = inputs.item_name ? inputs.item_name.value : "";
+          if (!String(it).trim()) return;
+          var sup = suggest.payeeByItem[itemKey(it)];
+          if (sup != null && sup !== "") inputs.payee.value = sup;
+        }
         // Predict the unit price from the latest material price for Item + Payee.
         function predictUnitPrice() {
           if (!inputs.unit_price || inputs.unit_price.dataset.userEdited === "true") return;
@@ -270,8 +284,10 @@
           var u = parseFloat(inputs.unit_price ? inputs.unit_price.value : "");
           if (isFinite(q) && isFinite(u)) inputs.amount.value = (Math.round(q * u * 100) / 100).toFixed(2);
         }
+        // Item change: fill the payee from the item, then predict the unit price.
+        function onItemChange() { predictPayee(); predictUnitPrice(); }
         ["change", "input"].forEach(function (ev) {
-          if (inputs.item_name) inputs.item_name.addEventListener(ev, predictUnitPrice);
+          if (inputs.item_name) inputs.item_name.addEventListener(ev, onItemChange);
           if (inputs.payee) inputs.payee.addEventListener(ev, predictUnitPrice);
           if (inputs.quantity) inputs.quantity.addEventListener(ev, recalcAmount);
         });
