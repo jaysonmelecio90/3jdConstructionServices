@@ -49,14 +49,14 @@ if (current_user() !== null) {
               <label class="form-label small fw-semibold text-secondary" for="email">Email</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                <input class="form-control" type="email" id="email" autocomplete="username" value="admin@3jdconstruction.com" required />
+                <input class="form-control" type="email" id="email" autocomplete="username" placeholder="you@example.com" required />
               </div>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-semibold text-secondary" for="password">Password</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                <input class="form-control" type="password" id="password" autocomplete="current-password" value="admin123" required />
+                <input class="form-control" type="password" id="password" autocomplete="current-password" required />
               </div>
             </div>
             <div class="text-danger small fw-medium mb-3" id="loginErr" style="min-height:1em"></div>
@@ -64,7 +64,6 @@ if (current_user() !== null) {
           </form>
         </div>
       </div>
-      <p class="text-center text-secondary small mt-3 mb-0">Demo &middot; admin@3jdconstruction.com / admin123</p>
     </div>
   </div>
 
