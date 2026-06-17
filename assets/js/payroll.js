@@ -490,19 +490,18 @@
 
   async function openForm(existing) {
     await Promise.all([loadProjects(), loadWorkers()]);
-    if (!(state.projects && state.projects.length)) {
-      S.toast("No projects available. Add a project first.", "err");
-      return;
-    }
+    // Project is optional — admin / overhead payroll needs no project — so only a
+    // worker is mandatory to open the form.
     if (!(state.workers && state.workers.length)) {
       S.toast("No active workers available. Add a worker first.", "err");
       return;
     }
 
     var isEdit = !!existing;
+    // New entries default to Admin / Overhead (no project); editing keeps its value.
     var initialProjectId = existing
       ? (existing.project_id == null ? "" : existing.project_id)
-      : (state.projects[0] ? state.projects[0].id : "");
+      : "";
     var initialWorkerId  = existing ? existing.worker_id  : (state.workers[0]  ? state.workers[0].id  : "");
     var initialRateType  = existing ? (existing.rate_type || "daily") : "daily";
 
@@ -511,8 +510,9 @@
       submitLabel: isEdit ? "Save changes" : "Add entry",
       fields: [
         {
-          name: "project_id", label: "Project", type: "select", required: true, col: 12,
+          name: "project_id", label: "Project (optional)", type: "select", col: 12,
           options: projectOptions(), value: initialProjectId,
+          help: "Leave as Admin / Overhead for payroll not tied to a project.",
         },
         {
           name: "worker_id", label: "Worker", type: "select", required: true, col: 12,
@@ -585,6 +585,23 @@
         }
         if (inputs.period_start) inputs.period_start.addEventListener("change", autofillDays);
         if (inputs.period_end)   inputs.period_end.addEventListener("change", autofillDays);
+
+        // Auto-fill rates from the selected worker: the regular rate follows the
+        // rate type (daily vs hourly); overtime is always charged per hour.
+        function fillRatesFromWorker() {
+          if (!inputs.worker_id || !inputs.rate_type) return;
+          var wid = String(inputs.worker_id.value);
+          var wk = (state.workers || []).filter(function (x) { return String(x.id) === wid; })[0];
+          if (!wk) return;
+          var reg = inputs.rate_type.value === "hourly" ? wk.hourly_rate : wk.daily_rate;
+          if (inputs.regular_rate)  inputs.regular_rate.value  = (reg == null || reg === "") ? "" : String(reg);
+          if (inputs.overtime_rate) inputs.overtime_rate.value = (wk.hourly_rate == null || wk.hourly_rate === "") ? "" : String(wk.hourly_rate);
+        }
+        if (inputs.worker_id) inputs.worker_id.addEventListener("change", fillRatesFromWorker);
+        if (inputs.rate_type) inputs.rate_type.addEventListener("change", fillRatesFromWorker);
+        // Populate the default worker's rates immediately for new entries; keep
+        // saved values when editing.
+        if (!isEdit) fillRatesFromWorker();
       },
       onSubmit: async function (values) {
         var rawProj   = values.project_id;

@@ -673,6 +673,23 @@
 
         if (inputs.period_start) inputs.period_start.addEventListener("change", autofillDays);
         if (inputs.period_end)   inputs.period_end.addEventListener("change", autofillDays);
+
+        // Auto-fill rates from the selected worker: the regular rate follows the
+        // rate type (daily vs hourly); overtime is always charged per hour.
+        function fillRatesFromWorker() {
+          if (!inputs.worker_id || !inputs.rate_type) return;
+          var wid = String(inputs.worker_id.value);
+          var wk = pool.filter(function (x) { return String(x.id) === wid; })[0];
+          if (!wk) return;
+          var reg = inputs.rate_type.value === "hourly" ? wk.hourly_rate : wk.daily_rate;
+          if (inputs.regular_rate)  inputs.regular_rate.value  = (reg == null || reg === "") ? "" : String(reg);
+          if (inputs.overtime_rate) inputs.overtime_rate.value = (wk.hourly_rate == null || wk.hourly_rate === "") ? "" : String(wk.hourly_rate);
+        }
+        if (inputs.worker_id) inputs.worker_id.addEventListener("change", fillRatesFromWorker);
+        if (inputs.rate_type) inputs.rate_type.addEventListener("change", fillRatesFromWorker);
+        // Populate the default worker's rates immediately for new entries; keep
+        // saved values when editing.
+        if (!isEdit) fillRatesFromWorker();
       },
       onSubmit: async function (values) {
         var payload = {
