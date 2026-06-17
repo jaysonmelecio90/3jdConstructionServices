@@ -21,11 +21,12 @@
   var query = { q: "", project_id: "", status: "" };
   var searchTimer = null;
   // Autocomplete + price-prediction cache (from api/materials.php?suggest=1).
-  var suggest = { hardware: [], suppliers: [], priceMap: {} };
+  var suggest = { hardware: [], suppliers: [], priceMap: {}, supplierByItem: {}, itemBySupplier: {} };
 
   function suggestKey(hardware, location) {
     return JSON.stringify([String(hardware || "").trim().toLowerCase(), String(location || "").trim().toLowerCase()]);
   }
+  function oneKey(s) { return String(s || "").trim().toLowerCase(); }
   async function loadSuggest() {
     try {
       var d = await S.api("GET", "api/materials.php?suggest=1");
@@ -34,6 +35,12 @@
       var map = {};
       ((d && d.latest) || []).forEach(function (x) { map[suggestKey(x.hardware, x.location)] = x.price; });
       suggest.priceMap = map;
+      var sbi = {};
+      ((d && d.item_supplier) || []).forEach(function (x) { sbi[oneKey(x.hardware)] = x.location; });
+      suggest.supplierByItem = sbi;
+      var ibs = {};
+      ((d && d.supplier_item) || []).forEach(function (x) { ibs[oneKey(x.location)] = x.hardware; });
+      suggest.itemBySupplier = ibs;
     } catch (e) { /* non-fatal — the form still works without suggestions */ }
   }
 
@@ -241,12 +248,27 @@
         attachList(inputs.hardware, suggest.hardware, "dl-mat-hardware");
         attachList(inputs.location, suggest.suppliers, "dl-mat-supplier");
 
-        // Don't clobber a price the user typed (or an existing one when editing).
-        if (inputs.price && isEdit && r && r.price != null && String(r.price) !== "") {
-          inputs.price.dataset.userEdited = "true";
+        // Don't clobber values the user typed (or existing ones when editing).
+        if (isEdit && r) {
+          if (inputs.hardware && r.hardware != null && String(r.hardware) !== "") inputs.hardware.dataset.userEdited = "true";
+          if (inputs.location && r.location != null && String(r.location) !== "") inputs.location.dataset.userEdited = "true";
+          if (inputs.price && r.price != null && String(r.price) !== "") inputs.price.dataset.userEdited = "true";
         }
+        if (inputs.hardware) inputs.hardware.addEventListener("input", function () { inputs.hardware.dataset.userEdited = "true"; });
+        if (inputs.location) inputs.location.addEventListener("input", function () { inputs.location.dataset.userEdited = "true"; });
         if (inputs.price) inputs.price.addEventListener("input", function () { inputs.price.dataset.userEdited = "true"; });
 
+        // Fill the supplier from the item (and vice-versa) using the material list.
+        function predictSupplier() {
+          if (!inputs.location || inputs.location.dataset.userEdited === "true" || !inputs.hardware) return;
+          var sup = suggest.supplierByItem[oneKey(inputs.hardware.value)];
+          if (sup != null && sup !== "") inputs.location.value = sup;
+        }
+        function predictItem() {
+          if (!inputs.hardware || inputs.hardware.dataset.userEdited === "true" || !inputs.location) return;
+          var it = suggest.itemBySupplier[oneKey(inputs.location.value)];
+          if (it != null && it !== "") inputs.hardware.value = it;
+        }
         // Predict the price from the latest entry for this hardware + supplier.
         function predictPrice() {
           if (!inputs.price || !inputs.hardware || inputs.price.dataset.userEdited === "true") return;
@@ -255,9 +277,11 @@
           var price = suggest.priceMap[suggestKey(hw, inputs.location ? inputs.location.value : "")];
           if (price != null) inputs.price.value = price;
         }
+        function onHardware() { predictSupplier(); predictPrice(); }
+        function onSupplier() { predictItem(); predictPrice(); }
         ["change", "input"].forEach(function (ev) {
-          if (inputs.hardware) inputs.hardware.addEventListener(ev, predictPrice);
-          if (inputs.location) inputs.location.addEventListener(ev, predictPrice);
+          if (inputs.hardware) inputs.hardware.addEventListener(ev, onHardware);
+          if (inputs.location) inputs.location.addEventListener(ev, onSupplier);
         });
       },
       onSubmit: async function (vals) {

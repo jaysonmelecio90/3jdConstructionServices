@@ -98,10 +98,12 @@ if ($method === 'GET') {
     // Autocomplete + price-prediction source for the entry form.
     //   ?suggest=1 -> { hardware:[...], suppliers:[...],
     //                   latest:[{hardware,location,price}],
-    //                   item_supplier:[{hardware,location}] }
+    //                   item_supplier:[{hardware,location}],
+    //                   supplier_item:[{location,hardware}] }
     // `latest` holds the most recently entered price for each hardware+supplier
-    // pair (by max id). `item_supplier` holds the most recent supplier for each
-    // hardware, so the form can pre-fill the payee from the item name.
+    // pair (by max id). `item_supplier` / `supplier_item` hold the most recent
+    // counterpart for each hardware / supplier, so the forms can fill one from
+    // the other (item <-> supplier, both directions).
     // -----------------------------------------------------------------------
     if (isset($_GET['suggest'])) {
         $hardware = $pdo->query("
@@ -145,11 +147,29 @@ if ($method === 'GET') {
                 $itemSupplier[] = ['hardware' => $r['hardware'], 'location' => $r['location']];
             }
         }
+        // Most recent hardware per supplier (by max id), for item prediction.
+        $supItemRows = $pdo->query("
+            SELECT m.location, m.hardware
+            FROM material_items m
+            JOIN (
+                SELECT location, MAX(id) AS max_id
+                FROM material_items
+                WHERE location IS NOT NULL AND location <> ''
+                GROUP BY location
+            ) t ON t.max_id = m.id
+        ")->fetchAll();
+        $supplierItem = [];
+        foreach ($supItemRows as $r) {
+            if ($r['hardware'] !== null && $r['hardware'] !== '') {
+                $supplierItem[] = ['location' => $r['location'], 'hardware' => $r['hardware']];
+            }
+        }
         json_out([
             'hardware'      => $hardware,
             'suppliers'     => $suppliers,
             'latest'        => $latest,
             'item_supplier' => $itemSupplier,
+            'supplier_item' => $supplierItem,
         ]);
     }
 
