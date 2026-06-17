@@ -1,121 +1,77 @@
-# CD Engineering — Project Management
+# 3J & D Construction — Cost Management SaaS
 
-A Flask web app that replaces the legacy `Proposal Submital Fee.xlsm` workbook
-with a real database-backed system for managing clients, architects, and
-project proposals. Uses **MySQL / MariaDB** for storage.
+A login-gated web app for **3J & D Construction Services** to track project
+costs end to end: projects, expenses, materials, workers, clients, income,
+payroll (regular + overtime with reports), per-project cash advances, worker
+loans with repayments, and a dashboard bank balance.
 
-## Features
+## Stack
 
-- **Login / register** — users authenticate before accessing anything
-- **Dashboard** — at-a-glance counts plus total billed / collected / outstanding
-- **Clients** — building owners (the "Owner" column from the workbook)
-- **Architects** — the firm contacts who hire you, grouped by company
-- **Proposals** — full proposal lifecycle (Draft → Submitted → Approved → Paid),
-  with auto-populated default scope-of-work text matching your existing letters
-- **Printable proposal letter** view, ready to print or save as PDF
-- **Excel import** — seeds the database from your existing `.xlsm` summary sheet
+- **Backend:** PHP 8 + PDO (MySQL / MariaDB). Pure PHP — **no Composer, no
+  `vendor/`, no build step**, no framework.
+- **Frontend:** static HTML + vanilla JS, styled with Bootstrap 5 + Bootstrap
+  Icons + Chart.js (loaded from CDN). API calls use **relative paths**, so the
+  app runs at a domain root or any subfolder.
+- **Auth:** PHP sessions (`TJDSESS` cookie). Login credentials expire 30 days
+  after sign-in (enforced server-side in `api/util.php`).
+- **Extensions required:** `pdo_mysql` only (plus core `json`). No `bcmath` —
+  money math uses exact integer centavos.
 
-## Prerequisites
-
-- Python 3.10+
-- MySQL or MariaDB (XAMPP works — defaults assume it)
-
-## Setup
-
-### 1. Install Python dependencies
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-### 2. Make sure MySQL/MariaDB is running
-
-If you use XAMPP, open the XAMPP Control Panel and start **MySQL**, or run:
-
-```powershell
-& "C:\xampp\mysql\bin\mysqld.exe" --defaults-file="C:\xampp\mysql\bin\my.ini" --standalone
-```
-
-### 3. Create the database
-
-```powershell
-& "C:\xampp\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS cdengineering CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-### 4. Configure connection (.env)
-
-Copy `.env.example` to `.env` and fill in your MySQL credentials:
-
-```ini
-SECRET_KEY=your-long-random-secret
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=
-MYSQL_DB=cdengineering
-```
-
-A `.env` is already included with XAMPP-friendly defaults (root, no password).
-
-### 5. Create the tables
-
-```powershell
-python -c "from app import app; from extensions import db; ctx=app.app_context(); ctx.push(); db.create_all(); print('OK')"
-```
-
-### 6. (Optional) Seed from your existing workbook
-
-```powershell
-python import_excel.py "D:/My Drive/5. DESIGN DOCS/Project Proposal/2025 - Proposal Submital Fee .xlsm"
-```
-
-### 7. Run
-
-```powershell
-python app.py
-```
-
-Open <http://127.0.0.1:5000> and register the first account — it becomes
-the **admin**.
-
-## Project layout
+## Layout
 
 ```
 CDEngineering/
-├── app.py                  # Flask app factory + entrypoint
-├── config.py               # Reads .env, builds MySQL URI
-├── extensions.py           # db, login_manager
-├── models.py               # User, Company, Architect, Client, Proposal
-├── forms.py                # WTForms definitions
-├── blueprints/
-│   ├── auth.py             # /login, /logout, /register
-│   ├── dashboard.py        # /  (home)
-│   ├── clients.py          # /clients/...
-│   ├── architects.py       # /architects/...
-│   └── proposals.py        # /proposals/...
-├── templates/              # Jinja2 HTML
-├── static/style.css
-├── import_excel.py         # Workbook → DB seeder
-├── .env.example
-├── .gitignore
-└── requirements.txt
+├── *.html                 # pages (index, login, projects, payroll, loans, …)
+├── assets/
+│   ├── js/                # shell.js + one module per page
+│   └── css/app.css
+├── api/                   # PHP endpoints (one per resource)
+│   ├── config.example.php # copy to config.php and fill in DB credentials
+│   ├── db.php             # PDO singleton
+│   └── util.php           # session auth, JSON helpers
+├── schema.sql             # full DDL + seed (projects, admin user, settings)
+└── ExcelImporter/         # optional C# console ETL → api/import.php
 ```
 
-## Switching MySQL servers / users
+## Run locally (XAMPP on Windows)
 
-Just edit `.env` — there's no other configuration. The connection string is
-built as:
+1. Start MariaDB (XAMPP Control Panel → MySQL, or `mysqld`).
+2. Create a database and import the schema (via phpMyAdmin or CLI):
+   ```
+   mysql -u root your_db_name < schema.sql
+   ```
+3. Copy the config template and fill in your DB credentials:
+   ```
+   cp api/config.example.php api/config.php
+   ```
+4. Serve the folder:
+   ```
+   php -S 127.0.0.1:8088 -t .
+   ```
+5. Open <http://127.0.0.1:8088/> and log in with the seeded admin:
+   **admin@3jdconstruction.com / admin123** — change the password in
+   Settings → Users after first login.
 
-```
-mysql+pymysql://USER[:PASSWORD]@HOST:PORT/DB?charset=utf8mb4
-```
+## Deploy to Hostinger (hPanel shared hosting)
 
-Or set `DATABASE_URL` directly to override everything.
+1. **PHP version:** select 8.1+ in *PHP Configuration*. (`pdo_mysql` is on by
+   default; no `bcmath` needed.)
+2. **Database:** create a MySQL DB + user in hPanel, then import `schema.sql`
+   via phpMyAdmin **into a fresh, empty database** (the script drops tables
+   first).
+3. **Config:** `api/config.php` is gitignored and is **not** deployed — create
+   it on the server (copy `api/config.example.php`) with Hostinger's values:
+   `DB_HOST = localhost`, the `DB_NAME` / `DB_USER` from hPanel, your
+   `DB_PASS`, and a random `IMPORT_TOKEN`.
+4. **Files:** deploy the repository contents into `public_html`.
+5. **SSL:** enable the free SSL certificate (the session cookie's `secure`
+   flag auto-detects HTTPS).
+6. **Security:** change the seeded admin password immediately.
 
-## Notes
+No `.htaccess` or URL rewriting is required — the app serves plain `.html`
+pages and `api/*.php` endpoints directly.
 
-- Driver: **PyMySQL** (pure Python, no compile required on Windows).
-- `pool_pre_ping` is on, so dropped MySQL connections recover automatically.
-- Self-service registration is open by default — close it (or gate behind
-  an admin) in `blueprints/auth.py` once your team is signed up.
-- Set a real `SECRET_KEY` in `.env` before deploying anywhere shared.
+## Secrets
+
+Never commit real credentials. `api/config.php` and `.env` are gitignored;
+only the `.example` templates are tracked.

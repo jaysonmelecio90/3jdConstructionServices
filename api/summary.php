@@ -25,6 +25,20 @@ function table_exists(PDO $pdo, string $table): bool
     }
 }
 
+/** Money string -> integer centavos. Exact for these magnitudes; avoids float drift without bcmath. */
+function centavos($v): int
+{
+    return (int) round(((float) $v) * 100);
+}
+
+/** Integer centavos -> "n.nn" string, formatted exactly (no float in the output path). */
+function pesos_str(int $c): string
+{
+    $sign = $c < 0 ? '-' : '';
+    $c = abs($c);
+    return $sign . intdiv($c, 100) . '.' . str_pad((string) ($c % 100), 2, '0', STR_PAD_LEFT);
+}
+
 // Grand total + category split across all expenses.
 $row = $pdo->query("
     SELECT
@@ -205,9 +219,10 @@ if ($hasLoanPayments) {
     $loansNet = number_format((float) $sumLoans, 2, '.', '');
 }
 
-// Sum in BCMath to avoid float drift on DECIMAL strings.
-$totalOut    = bcadd(bcadd((string) $sumExpenses, (string) $sumPayroll, 2), bcadd($loansNet, (string) $sumAdvances, 2), 2);
-$bankBalance = bcsub((string) $totalIn, $totalOut, 2);
+// Integer-centavo math avoids float drift on DECIMAL strings — no bcmath extension needed.
+$outCentavos = centavos($sumExpenses) + centavos($sumPayroll) + centavos($loansNet) + centavos($sumAdvances);
+$totalOut    = pesos_str($outCentavos);
+$bankBalance = pesos_str(centavos($totalIn) - $outCentavos);
 
 $outBreakdown = [
     'expenses'        => money_str($sumExpenses),
