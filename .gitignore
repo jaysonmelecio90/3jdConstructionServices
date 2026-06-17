@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
+*.sqlite
+*.sqlite3
+.venv/
+venv/
+.idea/
+.vscode/
+
+# PHP runtime secrets — copy api/config.example.php to api/config.php locally.
+api/config.php
+
+# Local Claude Code settings (machine-specific permissions/paths).
+.claude/settings.local.json

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Proposal {{ proposal.project_number or proposal.id }}{% endblock %}
+{% block content %}
+<div class="card-row">
+    <h1>Proposal {{ proposal.project_number or proposal.id }}</h1>
+    <div style="display:flex; gap:8px;">
+        <a class="btn-outline" href="{{ url_for('proposals.index') }}">← All proposals</a>
+        <a class="btn" href="{{ url_for('proposals.edit', proposal_id=proposal.id) }}">Edit</a>
+        <button class="btn-outline" onclick="window.print()">Print</button>
+        <form action="{{ url_for('proposals.delete', proposal_id=proposal.id) }}" method="post" class="inline-form" onsubmit="return confirm('Delete this proposal?');">
+            <button class="btn-danger" type="submit">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="display:flex; gap:18px; flex-wrap:wrap;">
+    <div><div class="muted">Status</div><span class="badge badge-{{ proposal.status }}">{{ proposal.status }}</span></div>
+    <div><div class="muted">Category</div>{{ proposal.category or "—" }}</div>
+    <div><div class="muted">Price</div><strong>{{ proposal.price|money }}</strong></div>
+    <div><div class="muted">Approved</div>{{ proposal.price_approved|money or "—" }}</div>
+    <div><div class="muted">Paid</div>{{ proposal.payed|money }}</div>
+    <div><div class="muted">Payable</div><strong>{{ proposal.payable|money }}</strong></div>
+    <div><div class="muted">Payment</div>{{ proposal.payment_method or "—" }}</div>
+</div>
+
+<div class="letter">
+    <div class="letterhead">
+        <h2>{{ company.COMPANY_NAME }}</h2>
+        <div class="muted">{{ company.COMPANY_ADDRESS }}</div>
+        <div class="muted">Mobile: {{ company.COMPANY_PHONE }} · {{ company.COMPANY_EMAIL }}</div>
+    </div>
+
+    <h2 style="text-align:center; margin-bottom:24px;">PROJECT PROPOSAL REQUEST</h2>
+
+    <div class="row"><strong>Date:</strong> {{ proposal.date_proposed|nice_date or proposal.date_received|nice_date }}</div>
+
+    {% if proposal.architect %}
+    <div class="row"><strong>To:</strong>
+        <span>{{ proposal.architect.title }} {{ proposal.architect.name }}<br>
+            {% if proposal.architect.company %}{{ proposal.architect.company.name }}<br>
+                {% if proposal.architect.company.address %}{{ proposal.architect.company.address }}{% endif %}
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+    <div class="row"><strong>Project Name:</strong> {{ proposal.project_title }}</div>
+    {% if proposal.client %}<div class="row"><strong>Project Owner:</strong> {{ proposal.client.name }}</div>{% endif %}
+    <div class="row"><strong>Category:</strong> {{ proposal.category }}</div>
+    {% if proposal.location %}<div class="row"><strong>Project Location:</strong> {{ proposal.location }}</div>{% endif %}
+
+    <p style="margin-top:24px;">Warm greetings!</p>
+    <p>I am pleased to submit my technical and financial proposals for the
+        {{ proposal.category|lower }} services for the above-named project.</p>
+
+    {% if proposal.scope_of_work %}
+    <h3 style="margin-top:18px; color:var(--text);">Scope of work</h3>
+    <pre>{{ proposal.scope_of_work }}</pre>
+    {% endif %}
+
+    {% if proposal.deliverables %}
+    <h3 style="margin-top:18px; color:var(--text);">Deliverables</h3>
+    <pre>{{ proposal.deliverables }}</pre>
+    {% endif %}
+
+    {% if proposal.schedule_duration %}
+    <h3 style="margin-top:18px; color:var(--text);">Schedule and duration</h3>
+    <p>{{ proposal.schedule_duration }}</p>
+    {% endif %}
+
+    <h3 style="margin-top:18px; color:var(--text);">Proposed fees</h3>
+    <p>The total service fee for the scope of work as described above shall be
+        a lump sum amount of <strong>{{ proposal.price|money }}</strong>.</p>
+
+    {% if proposal.payment_terms %}<pre>{{ proposal.payment_terms }}</pre>{% endif %}
+
+    {% if proposal.remarks %}
+        <h3 style="margin-top:18px; color:var(--text);">Remarks</h3>
+        <pre>{{ proposal.remarks }}</pre>
+    {% endif %}
+
+    <p style="margin-top:40px;">Respectfully yours,</p>
+    <p style="margin-top:50px;"><strong>CD Engineering</strong></p>
+</div>
+{% endblock %}

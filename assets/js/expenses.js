@@ -1,0 +1,262 @@
+/* ============================================================
+   expenses.js — Expenses ledger (Bootstrap shell)
+   Company-wide expense ledger: list/filter/search + full CRUD
+   against api/expenses.php via the Shell API.
+   ============================================================ */
+(function (w) {
+  "use strict";
+  var S = w.Shell;
+  var ENDPOINT = "api/expenses.php";
+
+  var state = {
+    projects: [],                                  // [{id,name,slug}]
+    filters: { project_id: "", category: "", q: "" },
+    items: [],
+  };
+  var searchTimer = null;
+
+  // UI nodes captured at build time so reloads only repaint data.
+  var ui = { searchInput: null, kpis: null, table: null };
+
+  document.addEventListener("DOMContentLoaded", init);
+
+  async function init() {
+    var m = await S.mount("expenses", { title: "Expenses" });
+    if (!m) return;                                // null = redirected to login
+    var root = m.content;
+
+    // Header + toolbar.
+    root.appendChild(S.el("div", { class: "d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" }, [
+      S.el("div", null, [
+        S.el("h2", { class: "h4 fw-bold mb-0", text: "Expense Ledger" }),
+        S.el("p", { class: "text-secondary small mb-0", text: "Every recorded material, labor and other cost across all projects." }),
+      ]),
+      S.el("button", { class: "btn btn-primary btn-sm", type: "button", onClick: function () { openForm(null); } },
+        [S.el("i", { class: "bi bi-plus-lg me-1" }), "Add expense"]),
+    ]));
+
+    root.appendChild(buildToolbar());
+
+    // KPI row + table card.
+    ui.kpis = S.el("div", { class: "row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-3" });
+    root.appendChild(ui.kpis);
+
+    ui.table = S.el("div");
+    root.appendChild(S.el("div", { class: "card" }, S.el("div", { class: "card-body" }, ui.table)));
+
+    await loadProjects();
+    await reload();
+  }
+
+  /* ---------- toolbar (filters + search) ---------- */
+  function buildToolbar() {
+    var projectSel = S.el("select", { class: "form-select form-select-sm", id: "expProjectFilter",
+      onChange: function () { state.filters.project_id = this.value; reload(); } },
+      S.el("option", { value: "" }, "All projects"));
+    ui.projectFilter = projectSel;
+
+    var categorySel = S.el("select", { class: "form-select form-select-sm",
+      onChange: function () { state.filters.category = this.value; reload(); } }, [
+      S.el("option", { value: "" }, "All categories"),
+      S.el("option", { value: "material" }, "Material"),
+      S.el("option", { value: "labor" }, "Labor"),
+      S.el("option", { value: "other" }, "Other"),
+    ]);
+
+    ui.searchInput = S.el("input", { class: "form-control", type: "search", placeholder: "Search item, payee or note…",
+      onInput: function () {
+        var v = this.value;
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () { state.filters.q = v.trim(); reload(); }, 260);
+      } });
+
+    return S.el("div", { class: "card mb-3" }, S.el("div", { class: "card-body" },
+      S.el("div", { class: "row g-2 align-items-end" }, [
+        S.el("div", { class: "col-12 col-md-4" }, [
+          S.el("label", { class: "form-label small fw-semibold text-secondary mb-1", text: "Project" }),
+          projectSel,
+        ]),
+        S.el("div", { class: "col-6 col-md-3" }, [
+          S.el("label", { class: "form-label small fw-semibold text-secondary mb-1", text: "Category" }),
+          categorySel,
+        ]),
+        S.el("div", { class: "col-6 col-md-5" }, [
+          S.el("label", { class: "form-label small fw-semibold text-secondary mb-1", text: "Search" }),
+          S.el("div", { class: "input-group input-group-sm" }, [
+            S.el("span", { class: "input-group-text" }, S.el("i", { class: "bi bi-search" })),
+            ui.searchInput,
+          ]),
+        ]),
+      ])
+    ));
+  }
+
+  /* ---------- projects (filter + form dropdown) ---------- */
+  async function loadProjects() {
+    try {
+      var data = await S.api("GET", "api/projects.php");
+      state.projects = ((data && data.projects) || []).map(function (p) {
+        return { id: p.id, name: p.name, slug: p.slug };
+      });
+    } catch (e) {
+      state.projects = [];
+    }
+    var sel = ui.projectFilter;
+    S.clear(sel);
+    sel.appendChild(S.el("option", { value: "" }, "All projects"));
+    state.projects.forEach(function (p) {
+      sel.appendChild(S.el("option", { value: String(p.id) }, p.name));
+    });
+    sel.value = state.filters.project_id || "";
+  }
+
+  /* ---------- load + render ---------- */
+  async function reload() {
+    ui.table.innerHTML = '<div class="text-center text-secondary py-5"><div class="spinner-border text-warning"></div></div>';
+    try {
+      var qs = buildQuery(state.filters);
+      var data = await S.api("GET", ENDPOINT + (qs ? "?" + qs : ""));
+      state.items = (data && data.items) || [];
+      renderSummary((data && data.summary) || {});
+      renderTable(state.items);
+    } catch (err) {
+      S.clear(ui.kpis);
+      S.emptyState(ui.table, (err && err.message) || "Could not load expenses.", "exclamation-triangle");
+    }
+  }
+
+  function buildQuery(f) {
+    var parts = [];
+    if (f.project_id) parts.push("project_id=" + encodeURIComponent(f.project_id));
+    if (f.category) parts.push("category=" + encodeURIComponent(f.category));
+    if (f.q) parts.push("q=" + encodeURIComponent(f.q));
+    return parts.join("&");
+  }
+
+  /* ---------- summary KPIs ---------- */
+  function renderSummary(s) {
+    S.clear(ui.kpis);
+    S.append(ui.kpis, [
+      S.statCard({ label: "Total Entries", value: w.numFmt(s.count || 0), sub: "In current view" }),
+      S.statCard({ label: "Total Amount", value: w.pesoFmt(s.total), sub: "Sum of view" }),
+      S.statCard({ label: "Material", value: w.pesoFmt(s.material), sub: "Material spend", accent: "material" }),
+      S.statCard({ label: "Labor", value: w.pesoFmt(s.labor), sub: "Labor spend", accent: "labor" }),
+      S.statCard({ label: "Other", value: w.pesoFmt(s.other), sub: "Other spend", accent: "other" }),
+    ]);
+  }
+
+  /* ---------- table ---------- */
+  function renderTable(items) {
+    S.renderTable(ui.table, {
+      columns: [
+        { label: "Date", render: function (r) { return w.fmtDate(r.entry_date_raw, r.entry_date); } },
+        { label: "Project", render: function (r) {
+            return S.el("a", { class: "link-brand", href: "project.html?slug=" + encodeURIComponent(r.project_slug || "") }, r.project_name || "—");
+          } },
+        { label: "Category", render: function (r) { return S.pill(r.category, "category"); } },
+        { label: "Item / Payee", render: function (r) {
+            return S.el("span", { text: r.item_name || r.payee || r.note || "—" });
+          } },
+        { label: "Qty", num: true, render: function (r) { return w.qtyFmt(r.quantity); } },
+        { label: "Amount", num: true, render: function (r) {
+            return S.el("span", { class: "fw-bold", text: w.pesoFmt(r.amount) });
+          } },
+        { label: "", thCls: "text-end", cls: "text-end", render: function (r) { return rowActions(r); } },
+      ],
+      rows: items,
+      empty: "No expenses match this view. Use “Add expense” to record one.",
+      emptyIcon: "cash-stack",
+    });
+  }
+
+  function rowActions(r) {
+    var edit = S.el("button", { class: "btn btn-sm btn-outline-secondary me-1", type: "button", title: "Edit",
+      onClick: function () { openForm(r); } }, S.el("i", { class: "bi bi-pencil" }));
+    var del = S.el("button", { class: "btn btn-sm btn-outline-danger", type: "button", title: "Delete",
+      onClick: function () { remove(r); } }, S.el("i", { class: "bi bi-trash" }));
+    return S.el("span", { class: "text-nowrap" }, [edit, del]);
+  }
+
+  /* ---------- add / edit ---------- */
+  function projectOptions() {
+    return state.projects.map(function (p) { return { value: p.id, label: p.name }; });
+  }
+
+  async function openForm(item) {
+    var isEdit = !!item;
+    var saved = await S.openForm({
+      title: isEdit ? "Edit expense" : "Add expense",
+      submitLabel: isEdit ? "Save changes" : "Add expense",
+      fields: [
+        { name: "project_id", label: "Project", type: "select", required: true, col: 6,
+          options: projectOptions(), value: item ? item.project_id : "" },
+        { name: "category", label: "Category", type: "select", required: true, col: 6,
+          options: [
+            { value: "material", label: "Material" },
+            { value: "labor", label: "Labor" },
+            { value: "other", label: "Other" },
+          ], value: item ? item.category : "material" },
+        { name: "entry_date", label: "Date", type: "date", col: 6, value: item ? (item.entry_date || "") : "" },
+        { name: "item_name", label: "Item name", type: "text", col: 6, placeholder: "e.g. Portland Cement",
+          value: item ? (item.item_name || "") : "" },
+        { name: "payee", label: "Payee", type: "text", col: 6, placeholder: "Supplier / worker",
+          value: item ? (item.payee || "") : "" },
+        { name: "quantity", label: "Quantity", type: "number", step: "0.001", col: 6,
+          value: item && item.quantity != null ? item.quantity : "" },
+        { name: "unit_price", label: "Unit price (₱)", type: "number", step: "0.01", col: 6,
+          value: item && item.unit_price != null ? item.unit_price : "" },
+        { name: "amount", label: "Amount (₱)", type: "number", step: "0.01", required: true, col: 6,
+          placeholder: "0.00", value: item && item.amount != null ? item.amount : "" },
+        { name: "note", label: "Note", type: "text", col: 12, placeholder: "Optional remarks",
+          value: item ? (item.note || "") : "" },
+      ],
+      onSubmit: async function (v) {
+        var projectId = parseInt(v.project_id, 10) || 0;
+        if (!projectId) throw new Error("Please choose a project.");
+        if (["material", "labor", "other"].indexOf(v.category) < 0) throw new Error("Please choose a category.");
+        if (v.amount === "" || isNaN(parseFloat(v.amount))) throw new Error("Enter a valid amount.");
+        if (parseFloat(v.amount) < 0) throw new Error("Amount cannot be negative.");
+
+        var payload = {
+          project_id: projectId,
+          category: v.category,
+          entry_date: v.entry_date || null,
+          item_name: v.item_name || null,
+          payee: v.payee || null,
+          quantity: v.quantity === "" ? null : v.quantity,
+          unit_price: v.unit_price === "" ? null : v.unit_price,
+          amount: v.amount,
+          note: v.note || null,
+        };
+        if (isEdit) {
+          payload.id = item.id;
+          await S.api("PUT", ENDPOINT, payload);
+        } else {
+          await S.api("POST", ENDPOINT, payload);
+        }
+      },
+    });
+
+    if (saved) {
+      S.toast(isEdit ? "Expense updated." : "Expense added.", "ok");
+      await reload();
+    }
+  }
+
+  /* ---------- delete ---------- */
+  async function remove(r) {
+    var label = r.item_name || r.payee || r.note || "this expense";
+    var ok = await S.confirm(
+      "Delete “" + label + "” (" + w.pesoFmt(r.amount) + ") from " + (r.project_name || "the project") + "?",
+      { title: "Delete expense", danger: true, okLabel: "Delete" }
+    );
+    if (!ok) return;
+    try {
+      await S.api("DELETE", ENDPOINT, { id: r.id });
+      S.toast("Expense deleted.", "ok");
+      await reload();
+    } catch (err) {
+      S.toast((err && err.message) || "Could not delete the expense.", "err");
+    }
+  }
+})(window);

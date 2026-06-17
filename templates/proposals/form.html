@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit Proposal" if mode == "edit" else "New Proposal" }}{% endblock %}
+{% block content %}
+<div class="card-row">
+    <h1>{{ "Edit proposal" if mode == "edit" else "New proposal" }}</h1>
+    <a class="btn-outline" href="{{ url_for('proposals.index') }}">← Back to list</a>
+</div>
+
+<form method="post" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="card">
+        <h2>Project details</h2>
+        <div class="form-grid">
+            <div class="field">{{ form.project_number.label }} {{ form.project_number() }}</div>
+            <div class="field">{{ form.category.label }} {{ form.category() }}</div>
+            <div class="field full">{{ form.project_title.label }} {{ form.project_title() }}
+                {% for e in form.project_title.errors %}<div class="err">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field full">{{ form.location.label }} {{ form.location() }}</div>
+            <div class="field">{{ form.client_id.label }} {{ form.client_id() }}
+                <small class="muted"><a href="{{ url_for('clients.new') }}" target="_blank">+ Add client</a></small>
+            </div>
+            <div class="field">{{ form.architect_id.label }} {{ form.architect_id() }}
+                <small class="muted"><a href="{{ url_for('architects.new') }}" target="_blank">+ Add architect</a></small>
+            </div>
+            <div class="field">{{ form.date_received.label }} {{ form.date_received() }}</div>
+            <div class="field">{{ form.date_proposed.label }} {{ form.date_proposed() }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Pricing</h2>
+        <div class="form-grid">
+            <div class="field">{{ form.lot_area_sqm.label }} {{ form.lot_area_sqm() }}</div>
+            <div class="field">{{ form.rate_per_sqm.label }} {{ form.rate_per_sqm() }}</div>
+            <div class="field">{{ form.sheet_count.label }} {{ form.sheet_count() }}</div>
+            <div class="field">{{ form.rate_per_sheet.label }} {{ form.rate_per_sheet() }}</div>
+            <div class="field">{{ form.price.label }} {{ form.price() }}
+                <small class="muted">Leave blank to auto-compute from area/sheets.</small>
+            </div>
+            <div class="field">{{ form.price_approved.label }} {{ form.price_approved() }}</div>
+            <div class="field">{{ form.payed.label }} {{ form.payed() }}</div>
+            <div class="field">{{ form.payment_method.label }} {{ form.payment_method() }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Status</h2>
+        <div class="form-grid">
+            <div class="field">{{ form.status.label }} {{ form.status() }}</div>
+            <div class="field">{{ form.date_approved.label }} {{ form.date_approved() }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Proposal letter content</h2>
+        <div class="form-grid">
+            <div class="field full">{{ form.scope_of_work.label }} {{ form.scope_of_work(rows=10) }}</div>
+            <div class="field full">{{ form.deliverables.label }} {{ form.deliverables(rows=4) }}</div>
+            <div class="field full">{{ form.schedule_duration.label }} {{ form.schedule_duration() }}</div>
+            <div class="field full">{{ form.payment_terms.label }} {{ form.payment_terms(rows=4) }}</div>
+            <div class="field full">{{ form.remarks.label }} {{ form.remarks(rows=3) }}</div>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+        {{ form.submit(class="btn") }}
+        <a class="btn-outline" href="{{ url_for('proposals.index') }}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

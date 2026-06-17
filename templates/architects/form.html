@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit Architect" if mode == "edit" else "New Architect" }}{% endblock %}
+{% block content %}
+<div class="card-row">
+    <h1>{{ "Edit architect" if mode == "edit" else "New architect" }}</h1>
+    <a class="btn-outline" href="{{ url_for('architects.index') }}">← Back</a>
+</div>
+
+<div class="card">
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="form-grid">
+            <div class="field">{{ form.name.label }} {{ form.name() }}
+                {% for e in form.name.errors %}<div class="err">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">{{ form.title.label }} {{ form.title() }}</div>
+            <div class="field">{{ form.phone.label }} {{ form.phone() }}</div>
+            <div class="field">{{ form.email.label }} {{ form.email() }}
+                {% for e in form.email.errors %}<div class="err">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">{{ form.company_name.label }} {{ form.company_name() }}</div>
+            <div class="field">{{ form.company_address.label }} {{ form.company_address() }}</div>
+            <div class="field full">{{ form.notes.label }} {{ form.notes() }}</div>
+        </div>
+        <div style="margin-top:16px;">{{ form.submit(class="btn") }}</div>
+    </form>
+</div>
+{% endblock %}

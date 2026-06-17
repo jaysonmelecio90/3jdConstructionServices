@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Clients{% endblock %}
+{% block content %}
+<div class="card-row">
+    <h1>Clients</h1>
+    <a class="btn" href="{{ url_for('clients.new') }}">+ New Client</a>
+</div>
+<form method="get" class="card" style="padding:14px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by name, phone, or email…" style="width:300px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+    <button class="btn btn-small" type="submit">Search</button>
+    {% if q %}<a class="btn-outline btn-small" href="{{ url_for('clients.index') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card" style="padding:0;">
+    <div class="table-wrap">
+    <table class="data">
+        <thead><tr>
+            <th>Name</th><th>Phone</th><th>Email</th><th>Address</th><th>Proposals</th><th></th>
+        </tr></thead>
+        <tbody>
+            {% for c in clients %}
+            <tr>
+                <td><strong>{{ c.name }}</strong></td>
+                <td>{{ c.phone or "—" }}</td>
+                <td>{{ c.email or "—" }}</td>
+                <td>{{ c.address or "—" }}</td>
+                <td>{{ c.proposals|length }}</td>
+                <td>
+                    <a class="btn-outline btn-small" href="{{ url_for('clients.edit', client_id=c.id) }}">Edit</a>
+                    <form action="{{ url_for('clients.delete', client_id=c.id) }}" method="post" class="inline-form" onsubmit="return confirm('Delete this client?');">
+                        <button class="btn-danger btn-small" type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="muted" style="padding:20px; text-align:center;">No clients yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}
