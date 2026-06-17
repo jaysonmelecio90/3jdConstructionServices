@@ -18,6 +18,32 @@
   // UI nodes captured at build time so reloads only repaint data.
   var ui = { searchInput: null, kpis: null, table: null };
 
+  // Material-list suggestions: autocomplete for Item/Payee + unit-price memory,
+  // shared with the Material List page via api/materials.php?suggest=1.
+  var suggest = { hardware: [], suppliers: [], priceMap: {} };
+  function suggestKey(item, payee) {
+    return JSON.stringify([String(item || "").trim().toLowerCase(), String(payee || "").trim().toLowerCase()]);
+  }
+  async function loadSuggest() {
+    try {
+      var d = await S.api("GET", "api/materials.php?suggest=1");
+      suggest.hardware = (d && d.hardware) || [];
+      suggest.suppliers = (d && d.suppliers) || [];
+      var map = {};
+      ((d && d.latest) || []).forEach(function (x) { map[suggestKey(x.hardware, x.location)] = x.price; });
+      suggest.priceMap = map;
+    } catch (e) { /* non-fatal — the form still works without suggestions */ }
+  }
+  function attachList(input, values, id) {
+    if (!input || !values || !values.length) return;
+    var dl = document.createElement("datalist");
+    dl.id = id;
+    values.forEach(function (v) { var o = document.createElement("option"); o.value = v; dl.appendChild(o); });
+    input.parentNode.appendChild(dl);
+    input.setAttribute("list", id);
+    input.setAttribute("autocomplete", "off");
+  }
+
   document.addEventListener("DOMContentLoaded", init);
 
   async function init() {
@@ -45,6 +71,7 @@
     root.appendChild(S.el("div", { class: "card" }, S.el("div", { class: "card-body" }, ui.table)));
 
     await loadProjects();
+    loadSuggest();          // item/payee autocomplete + unit-price memory
     await reload();
   }
 
@@ -216,10 +243,43 @@
         { name: "note", label: "Note", type: "text", col: 12, placeholder: "Optional remarks",
           value: item ? (item.note || "") : "" },
       ],
+      onMount: function (inputs) {
+        // Autocomplete Item / Payee from the material list (hardware / suppliers).
+        attachList(inputs.item_name, suggest.hardware, "dl-exp-item");
+        attachList(inputs.payee, suggest.suppliers, "dl-exp-payee");
+
+        // Treat existing values (when editing) or anything the user types as
+        // user-set, so prediction / auto-calc never clobbers them.
+        if (inputs.unit_price && isEdit && item && item.unit_price != null && String(item.unit_price) !== "") inputs.unit_price.dataset.userEdited = "true";
+        if (inputs.amount && isEdit && item && item.amount != null && String(item.amount) !== "") inputs.amount.dataset.userEdited = "true";
+        if (inputs.unit_price) inputs.unit_price.addEventListener("input", function () { inputs.unit_price.dataset.userEdited = "true"; recalcAmount(); });
+        if (inputs.amount) inputs.amount.addEventListener("input", function () { inputs.amount.dataset.userEdited = "true"; });
+
+        // Predict the unit price from the latest material price for Item + Payee.
+        function predictUnitPrice() {
+          if (!inputs.unit_price || inputs.unit_price.dataset.userEdited === "true") return;
+          var it = inputs.item_name ? inputs.item_name.value : "";
+          if (!String(it).trim()) return;
+          var price = suggest.priceMap[suggestKey(it, inputs.payee ? inputs.payee.value : "")];
+          if (price != null) { inputs.unit_price.value = price; recalcAmount(); }
+        }
+        // Amount = quantity x unit price (unless the user typed their own amount).
+        function recalcAmount() {
+          if (!inputs.amount || inputs.amount.dataset.userEdited === "true") return;
+          var q = parseFloat(inputs.quantity ? inputs.quantity.value : "");
+          var u = parseFloat(inputs.unit_price ? inputs.unit_price.value : "");
+          if (isFinite(q) && isFinite(u)) inputs.amount.value = (Math.round(q * u * 100) / 100).toFixed(2);
+        }
+        ["change", "input"].forEach(function (ev) {
+          if (inputs.item_name) inputs.item_name.addEventListener(ev, predictUnitPrice);
+          if (inputs.payee) inputs.payee.addEventListener(ev, predictUnitPrice);
+          if (inputs.quantity) inputs.quantity.addEventListener(ev, recalcAmount);
+        });
+      },
       onSubmit: async function (v) {
         var projectId = parseInt(v.project_id, 10) || 0;
         if (!projectId) throw new Error("Please choose a project.");
-        if (["material", "labor", "other"].indexOf(v.category) < 0) throw new Error("Please choose a category.");
+        if (["material", "labor", "other", "family", "health"].indexOf(v.category) < 0) throw new Error("Please choose a category.");
         if (v.amount === "" || isNaN(parseFloat(v.amount))) throw new Error("Enter a valid amount.");
         if (parseFloat(v.amount) < 0) throw new Error("Amount cannot be negative.");
 
@@ -245,6 +305,7 @@
 
     if (saved) {
       S.toast(isEdit ? "Expense updated." : "Expense added.", "ok");
+      loadSuggest();   // a material expense may have added a new item/price
       await reload();
     }
   }

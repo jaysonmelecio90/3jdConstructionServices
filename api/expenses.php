@@ -227,6 +227,25 @@ if ($method === 'POST') {
     $stmt->execute([$projectId, $category, $entryRaw, $entryDate, $itemName, $payee, $quantity, $unitPrice, $amount, $note]);
     $id = (int) $pdo->lastInsertId();
 
+    // If this is a material expense whose item+supplier isn't yet in the
+    // project's Material List, add it there too (keeps the procurement catalog
+    // and the price memory in sync with what was actually purchased).
+    if ($category === 'material' && $itemName !== null) {
+        $exists = $pdo->prepare(
+            "SELECT 1 FROM material_items
+             WHERE project_id = ? AND hardware = ? AND COALESCE(location, '') = COALESCE(?, '')
+             LIMIT 1"
+        );
+        $exists->execute([$projectId, $itemName, $payee]);
+        if (!$exists->fetchColumn()) {
+            $insMat = $pdo->prepare(
+                "INSERT INTO material_items (project_id, hardware, price, location, item_date, status)
+                 VALUES (?, ?, ?, ?, ?, 'active')"
+            );
+            $insMat->execute([$projectId, $itemName, $unitPrice !== null ? $unitPrice : '0.00', $payee, $entryDate]);
+        }
+    }
+
     json_out(['ok' => true, 'item' => fetch_expense($pdo, $id)], 201);
 }
 
